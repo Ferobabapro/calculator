@@ -3,167 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulyator</title>
+    <title>Secure Calc</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <style>
         :root {
-            --bg-color: #0a0a0a;
-            --accent-color: #1a1a1a;
-            --text-color: #00ff41;
-            --mystery-red: #660000;
+            --bg-color: #050505;
+            --accent-main: #6200ea; /* Bənövşəyi */
+            --danger: #ff0000;
+            --text-color: #e0e0e0;
         }
 
         body {
-            background-color: #222;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #1a1a1a;
+            font-family: 'Consolas', monospace;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
             transition: background 0.5s;
         }
 
+        /* Keçid Animasiyası */
+        .slide-effect {
+            transition: transform 0.6s ease-in-out, opacity 0.5s;
+        }
+
         .calculator {
-            background: #333;
+            background: #2a2a2a;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 300px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            width: 320px;
+            z-index: 10;
         }
 
         #display {
-            width: 100%;
-            height: 50px;
-            background: #eee;
-            border: none;
-            margin-bottom: 10px;
-            font-size: 24px;
-            text-align: right;
-            padding: 10px;
-            box-sizing: border-box;
+            width: 100%; height: 60px;
+            background: #111; color: var(--accent-main);
+            border: 2px solid #444; border-radius: 8px;
+            margin-bottom: 15px; font-size: 28px;
+            text-align: right; padding: 10px; box-sizing: border-box;
         }
 
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-
+        .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         button {
-            padding: 15px;
-            font-size: 18px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
+            padding: 15px; font-size: 18px; cursor: pointer;
+            border: none; border-radius: 8px; background: #3d3d3d; color: white;
+            transition: 0.3s;
         }
+        button:hover { background: #555; }
 
+        /* Gizli Çat */
         #secret-chat {
             display: none;
             background-color: var(--bg-color);
-            color: var(--text-color);
-            width: 100vw;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            flex-direction: column;
-        }
-
-        .fero-header {
-            text-align: center;
-            font-size: 3rem;
-            letter-spacing: 15px;
-            text-shadow: 0 0 10px var(--mystery-red);
-            margin-bottom: 20px;
-            font-family: 'serif';
+            width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0;
+            flex-direction: column; padding: 20px; box-sizing: border-box;
         }
 
         #message-area {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid var(--accent-color);
-            padding: 10px;
-            margin-bottom: 10px;
+            flex-grow: 1; overflow-y: auto;
+            border: 1px solid #222; margin: 20px 0; padding: 10px;
         }
 
         .message {
-            background: var(--accent-color);
-            padding: 8px;
-            margin: 5px 0;
-            border-left: 3px solid var(--mystery-red);
-            cursor: pointer;
+            background: #0400ff; padding: 12px; margin: 10px 0;
+            border-left: 4px solid var(--accent-main);
+            cursor: pointer; position: relative;
+        }
+
+        /* SOS Rejimi */
+        .sos-active {
+            background-color: var(--danger) !important;
+            animation: flash 0.5s infinite;
+        }
+
+        @keyframes flash {
+            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
+        }
+
+        .sos-text {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5vw; color: white; text-align: center;
+            display: none; z-index: 100; font-weight: bold;
         }
 
         input[type="text"] {
-            background: #111;
-            border: 1px solid var(--mystery-red);
-            color: var(--text-color);
-            padding: 15px;
-            width: 80%;
-        }
-
-        .exit-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: transparent;
-            color: var(--mystery-red);
-            border: 1px solid var(--mystery-red);
+            background: #111; border: 1px solid var(--accent-main);
+            color: white; padding: 15px; flex-grow: 1; border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
-    <div class="calculator" id="calc-ui">
+    <div class="calculator slide-effect" id="calc-ui">
         <input type="text" id="display" disabled placeholder="0">
         <div class="buttons">
-            <button onclick="appendNum('7')">7</button>
-            <button onclick="appendNum('8')">8</button>
-            <button onclick="appendNum('9')">9</button>
-            <button onclick="appendNum('/')">/</button>
-            <button onclick="appendNum('4')">4</button>
-            <button onclick="appendNum('5')">5</button>
-            <button onclick="appendNum('6')">6</button>
-            <button onclick="appendNum('*')">*</button>
-            <button onclick="appendNum('1')">1</button>
-            <button onclick="appendNum('2')">2</button>
-            <button onclick="appendNum('3')">3</button>
-            <button onclick="appendNum('-')">-</button>
-            <button onclick="appendNum('0')">0</button>
-            <button onclick="appendNum('.')">.</button>
-            <button onclick="checkCode()">=</button>
-            <button onclick="appendNum('+')">+</button>
+            <button onclick="appendNum('7')">7</button><button onclick="appendNum('8')">8</button><button onclick="appendNum('9')">9</button><button onclick="appendNum('/')">/</button>
+            <button onclick="appendNum('4')">4</button><button onclick="appendNum('5')">5</button><button onclick="appendNum('6')">6</button><button onclick="appendNum('*')">*</button>
+            <button onclick="appendNum('1')">1</button><button onclick="appendNum('2')">2</button><button onclick="appendNum('3')">3</button><button onclick="appendNum('-')">-</button>
+            <button onclick="appendNum('0')">0</button><button onclick="appendNum('.')">.</button><button onclick="checkCode()">=</button><button onclick="appendNum('+')">+</button>
         </div>
-        <p id="error-msg" style="color: red; font-size: 12px; display: none; margin-top: 10px;">Calculator was erroring!</p>
     </div>
 
-    <div id="secret-chat">
-        <button class="exit-btn" onclick="lockApp()">BAĞLA</button>
-        <div class="fero-header">ᚠᛖᚱᛟ</div> 
+    <div id="secret-chat" class="slide-effect">
+        <div style="display: flex; justify-content: space-between;">
+            <button onclick="lockApp()" style="background: #222; border: 1px solid #444;">BAĞLA</button>
+            <button onclick="triggerSOS()" style="background: var(--danger); font-weight: bold;">SOS</button>
+        </div>
         <div id="message-area"></div>
-
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="user-input" placeholder="Mesajı yaz...">
-            <button onclick="sendMessage()" style="background: var(--mystery-red); color: white; border: none; padding: 10px; cursor: pointer;">GÖNDƏR</button>
+        <div id="input-container" style="display: flex; gap: 10px;">
+            <input type="text" id="user-input" placeholder="Mesaj...">
+            <button onclick="sendMessage()" style="background: var(--accent-main);">GÖNDƏR</button>
         </div>
-        <p style="font-size: 10px; color: #444;">Status: Şifrələnmiş Tunel Aktivdir</p>
     </div>
+
+    <div id="sos-screen" class="sos-text">KALKULYATOR TƏHLÜKƏDƏDİR!<br>DATA MƏHV EDİLİR...</div>
+
+    <audio id="alarm-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3" loop></audio>
 
     <script>
-        // Firebase Konfiqurasiyası
-        const firebaseConfig = {
-            databaseURL: "https://calculator-c3861-default-rtdb.firebaseio.com/"
-        };
+        const firebaseConfig = { databaseURL: "https://calculator-c3861-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let isAdmin = true; 
         let currentDisplay = "";
+        let sosMode = false;
 
         function appendNum(num) {
             currentDisplay += num;
@@ -172,84 +142,87 @@
 
         function checkCode() {
             if (currentDisplay === "2026+1") {
-                document.getElementById('error-msg').style.display = "block";
-                setTimeout(() => { openSecretMode(); }, 1000);
+                openSecretMode();
             } else {
                 try {
                     let res = eval(currentDisplay);
                     document.getElementById('display').value = res;
                     currentDisplay = res.toString();
-                } catch {
-                    document.getElementById('display').value = "Error";
-                    currentDisplay = "";
-                }
+                } catch { document.getElementById('display').value = "Error"; currentDisplay = ""; }
             }
         }
 
         function openSecretMode() {
-            document.getElementById('calc-ui').style.display = "none";
-            document.getElementById('secret-chat').style.display = "flex";
-            document.body.style.backgroundColor = "#0a0a0a";
+            database.ref('messages').remove(); // Yeni girişdə köhnələri təmizlə
+            document.getElementById('calc-ui').style.transform = "translateX(-150%)";
+            setTimeout(() => {
+                document.getElementById('calc-ui').style.display = "none";
+                document.getElementById('secret-chat').style.display = "flex";
+                document.getElementById('secret-chat').style.transform = "translateX(0)";
+            }, 400);
         }
 
         function lockApp() {
-            document.getElementById('secret-chat').style.display = "none";
-            document.getElementById('calc-ui').style.display = "block";
-            document.getElementById('display').value = "";
-            document.getElementById('error-msg').style.display = "none";
-            currentDisplay = "";
-            document.body.style.backgroundColor = "#222";
+            database.ref('messages').remove(); // Çıxışda təmizlə
+            document.getElementById('secret-chat').style.transform = "translateX(150%)";
+            setTimeout(() => {
+                document.getElementById('secret-chat').style.display = "none";
+                document.getElementById('calc-ui').style.display = "block";
+                document.getElementById('calc-ui').style.transform = "translateX(0)";
+                location.reload(); // Tam təmizlik üçün
+            }, 400);
         }
 
-        // Şifrələmə funksiyaları
-        function encrypt(text) {
-            return text.split('').map(char => String.fromCharCode(char.charCodeAt(0) + 5)).join('');
-        }
+        function encrypt(t) { return btoa(t); } // Sadə base64 şifrələmə
+        function decrypt(t) { return atob(t); }
 
-        function decrypt(text) {
-            return text.split('').map(char => String.fromCharCode(char.charCodeAt(0) - 5)).join('');
-        }
-
-        // Mesaj göndərmə
         function sendMessage() {
+            if(sosMode) return;
             const input = document.getElementById('user-input');
             if (input.value.trim() === "") return;
-
-            const msgData = {
-                content: encrypt(input.value),
-                timestamp: Date.now()
-            };
-
-            database.ref('messages').push(msgData);
+            database.ref('messages').push({ content: encrypt(input.value), time: Date.now() });
             input.value = "";
         }
 
-        // Mesajları real vaxtda dinləmə
-        database.ref('messages').on('child_added', (snapshot) => {
-            const data = snapshot.val();
+        database.ref('messages').on('child_added', (snap) => {
+            const data = snap.val();
+            const key = snap.key;
             const msgArea = document.getElementById('message-area');
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.id = key;
+            div.innerHTML = `<span>[ŞİFRƏLİ DATA]</span>`;
             
-            let msgDiv = document.createElement('div');
-            msgDiv.className = 'message';
-            
-            // Gizli məlumatı dataset-də saxlayırıq
-            msgDiv.dataset.decrypted = decrypt(data.content);
-            msgDiv.dataset.read = "false";
-
-            msgDiv.innerHTML = `<span>[ŞİFRƏLİ]: ${data.content}</span>`;
-            
-            msgDiv.onclick = function() {
-                if (this.dataset.read === "false") {
-                    this.innerHTML = `<span>[MESAJ]: ${this.dataset.decrypted}</span>`;
-                    this.dataset.read = "true";
-                } else {
-                    this.innerHTML = `<span style="color: #444;">[SİLİNDİ - OXUNUB]</span>`;
-                }
+            div.onclick = function() {
+                this.innerHTML = `<span>[MESAJ]: ${decrypt(data.content)}</span> <br> <small style="color:red">5s sonra silinəcək...</small>`;
+                setTimeout(() => {
+                    database.ref('messages/' + key).remove();
+                    this.remove();
+                }, 5000);
             };
-
-            msgArea.appendChild(msgDiv);
+            msgArea.appendChild(div);
             msgArea.scrollTop = msgArea.scrollHeight;
         });
+
+        database.ref('messages').on('child_removed', (snap) => {
+            const el = document.getElementById(snap.key);
+            if(el) el.remove();
+        });
+
+        function triggerSOS() {
+            sosMode = true;
+            document.body.classList.add('sos-active');
+            document.getElementById('sos-screen').style.display = "block";
+            document.getElementById('alarm-sound').play();
+            document.getElementById('input-container').style.display = "none";
+            
+            // Firebase-dən hər şeyi sil
+            database.ref('messages').remove();
+
+            setInterval(() => {
+                console.warn("CALCULATOR DATA DESTROYED!");
+            }, 100);
+        }
     </script>
 </body>
 </html>
