@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulyator</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --accent-color: #1a1a1a;
+            --text-color: #00ff41;
+            --mystery-red: #660000;
+        }
+
+        body {
+            background-color: #222;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.5s;
+        }
+
+        .calculator {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 300px;
+        }
+
+        #display {
+            width: 100%;
+            height: 50px;
+            background: #eee;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 24px;
+            text-align: right;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #secret-chat {
+            display: none;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            flex-direction: column;
+        }
+
+        .fero-header {
+            text-align: center;
+            font-size: 3rem;
+            letter-spacing: 15px;
+            text-shadow: 0 0 10px var(--mystery-red);
+            margin-bottom: 20px;
+            font-family: 'serif';
+        }
+
+        #message-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            background: var(--accent-color);
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid var(--mystery-red);
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            background: #111;
+            border: 1px solid var(--mystery-red);
+            color: var(--text-color);
+            padding: 15px;
+            width: 80%;
+        }
+
+        .exit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            color: var(--mystery-red);
+            border: 1px solid var(--mystery-red);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator" id="calc-ui">
+        <input type="text" id="display" disabled placeholder="0">
+        <div class="buttons">
+            <button onclick="appendNum('7')">7</button>
+            <button onclick="appendNum('8')">8</button>
+            <button onclick="appendNum('9')">9</button>
+            <button onclick="appendNum('/')">/</button>
+            <button onclick="appendNum('4')">4</button>
+            <button onclick="appendNum('5')">5</button>
+            <button onclick="appendNum('6')">6</button>
+            <button onclick="appendNum('*')">*</button>
+            <button onclick="appendNum('1')">1</button>
+            <button onclick="appendNum('2')">2</button>
+            <button onclick="appendNum('3')">3</button>
+            <button onclick="appendNum('-')">-</button>
+            <button onclick="appendNum('0')">0</button>
+            <button onclick="appendNum('.')">.</button>
+            <button onclick="checkCode()">=</button>
+            <button onclick="appendNum('+')">+</button>
+        </div>
+        <p id="error-msg" style="color: red; font-size: 12px; display: none; margin-top: 10px;">Calculator was erroring!</p>
+    </div>
+
+    <div id="secret-chat">
+        <button class="exit-btn" onclick="lockApp()">BAĞLA</button>
+        <div class="fero-header">ᚠᛖᚱᛟ</div> 
+        <div id="message-area"></div>
+
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="user-input" placeholder="Mesajı yaz...">
+            <button onclick="sendMessage()" style="background: var(--mystery-red); color: white; border: none; padding: 10px; cursor: pointer;">GÖNDƏR</button>
+        </div>
+        <p style="font-size: 10px; color: #444;">Status: Şifrələnmiş Tunel Aktivdir</p>
+    </div>
+
+    <script>
+        // Firebase Konfiqurasiyası
+        const firebaseConfig = {
+            databaseURL: "https://calculator-c3861-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let isAdmin = true; 
+        let currentDisplay = "";
+
+        function appendNum(num) {
+            currentDisplay += num;
+            document.getElementById('display').value = currentDisplay;
+        }
+
+        function checkCode() {
+            if (currentDisplay === "2026+1") {
+                document.getElementById('error-msg').style.display = "block";
+                setTimeout(() => { openSecretMode(); }, 1000);
+            } else {
+                try {
+                    let res = eval(currentDisplay);
+                    document.getElementById('display').value = res;
+                    currentDisplay = res.toString();
+                } catch {
+                    document.getElementById('display').value = "Error";
+                    currentDisplay = "";
+                }
+            }
+        }
+
+        function openSecretMode() {
+            document.getElementById('calc-ui').style.display = "none";
+            document.getElementById('secret-chat').style.display = "flex";
+            document.body.style.backgroundColor = "#0a0a0a";
+        }
+
+        function lockApp() {
+            document.getElementById('secret-chat').style.display = "none";
+            document.getElementById('calc-ui').style.display = "block";
+            document.getElementById('display').value = "";
+            document.getElementById('error-msg').style.display = "none";
+            currentDisplay = "";
+            document.body.style.backgroundColor = "#222";
+        }
+
+        // Şifrələmə funksiyaları
+        function encrypt(text) {
+            return text.split('').map(char => String.fromCharCode(char.charCodeAt(0) + 5)).join('');
+        }
+
+        function decrypt(text) {
+            return text.split('').map(char => String.fromCharCode(char.charCodeAt(0) - 5)).join('');
+        }
+
+        // Mesaj göndərmə
+        function sendMessage() {
+            const input = document.getElementById('user-input');
+            if (input.value.trim() === "") return;
+
+            const msgData = {
+                content: encrypt(input.value),
+                timestamp: Date.now()
+            };
+
+            database.ref('messages').push(msgData);
+            input.value = "";
+        }
+
+        // Mesajları real vaxtda dinləmə
+        database.ref('messages').on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            const msgArea = document.getElementById('message-area');
+            
+            let msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            
+            // Gizli məlumatı dataset-də saxlayırıq
+            msgDiv.dataset.decrypted = decrypt(data.content);
+            msgDiv.dataset.read = "false";
+
+            msgDiv.innerHTML = `<span>[ŞİFRƏLİ]: ${data.content}</span>`;
+            
+            msgDiv.onclick = function() {
+                if (this.dataset.read === "false") {
+                    this.innerHTML = `<span>[MESAJ]: ${this.dataset.decrypted}</span>`;
+                    this.dataset.read = "true";
+                } else {
+                    this.innerHTML = `<span style="color: #444;">[SİLİNDİ - OXUNUB]</span>`;
+                }
+            };
+
+            msgArea.appendChild(msgDiv);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        });
+    </script>
+</body>
+</html>
